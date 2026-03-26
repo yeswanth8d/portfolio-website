@@ -12,6 +12,53 @@ document.querySelectorAll('.cards-row .skill-card').forEach((c, i) => {
 });
 
 
+// Tech stack mini-tooltip info
+const tagInfo = {
+  'React':          'Core UI library — used for component-driven SPAs and complex state management.',
+  'Next.js':        'React meta-framework for SSR & SSG. Powers most of my production sites.',
+  'Vue':            'Used for lightweight, fast-moving projects where reactivity matters most.',
+  'TypeScript':     'Type safety across all major projects. Catches bugs before runtime.',
+  'Tailwind':       'Utility-first CSS — speeds up styling without leaving the HTML.',
+  'HTML/CSS':       'The foundation. Pixel-perfect markup and hand-crafted stylesheets.',
+  'Webpack':        'Module bundler for custom build pipelines and asset optimization.',
+  'Vite':           'Lightning-fast dev server and build tool. My go-to for new projects.',
+  'Figma':          'Primary design tool. Used for wireframes, hi-fi mockups & design systems.',
+  'Adobe XD':       'Prototyping complex interactions before handing off to developers.',
+  'Prototyping':    'Interactive prototypes that simulate real user flows and edge cases.',
+  'Design Systems': 'Building reusable component libraries with consistent tokens and rules.',
+  'Wireframing':    'Low-fidelity structure sketches to validate UX before visual design.',
+  'User Research':  'Interviews, surveys & usability tests to back design decisions with data.',
+  'React Native':   'Cross-platform mobile framework — one codebase for iOS & Android.',
+  'Flutter':        "Google's UI toolkit for natively compiled mobile & desktop apps.",
+  'Expo':           'React Native toolchain that simplifies builds, OTA updates & native APIs.',
+  'iOS':            'App Store submission, provisioning profiles, and native API access.',
+  'Android':        'Google Play deployment, Gradle builds, and Android-specific tuning.',
+  'App Store':      'Full publishing pipeline — screenshots, metadata, review & updates.',
+  'Push Notifications': 'FCM & APNs integration for targeted re-engagement notifications.',
+  'Node.js':        'Server-side JS runtime powering my REST APIs and automation scripts.',
+  'Python':         'Used for AI/ML pipelines, backend APIs, and data processing tasks.',
+  'PostgreSQL':     'Primary relational DB. Complex queries, joins & performance tuning.',
+  'MongoDB':        'Document DB used when schema flexibility and speed matter most.',
+  'REST':           'Standard HTTP APIs with clean resource design and proper status codes.',
+  'GraphQL':        'Query language for flexible, typed APIs — avoids over/under-fetching.',
+  'Docker':         'Every project containerised. Compose for dev, consistent prod builds.',
+  'AWS':            'EC2, S3, Lambda, RDS & CloudFront — full cloud deployment experience.',
+  'Claude API':     'Primary LLM I build with daily — reasoning, coding, document analysis.',
+  'OpenAI':         'GPT models used for comparison and tasks where OpenAI has an edge.',
+  'RAG':            'Retrieval-Augmented Generation — grounds AI responses in real data.',
+  'LangChain':      'Chaining LLM calls, tools & memory into multi-step AI workflows.',
+  'n8n':            'Visual automation builder — connects APIs and orchestrates pipelines.',
+  'Ollama':         'Runs open-source LLMs locally for private, offline AI experiments.',
+  'HuggingFace':    'Hub for open models, embedding models, datasets & spaces.',
+  'Embeddings':     'Vector representations of text used in semantic search & RAG systems.',
+  'GSAP':           'The gold-standard animation library. Smooth, precise, 60fps.',
+  'Framer Motion':  'React animation library — used for layout animations & page transitions.',
+  'Three.js':       '3D in the browser. WebGL scenes, shaders & interactive experiences.',
+  'CSS Animations': 'Performant keyframe animations and transitions without JS overhead.',
+  'Lottie':         'After Effects animations rendered as lightweight JSON for the web.',
+  'ScrollTrigger':  'GSAP plugin for scroll-driven storytelling and pinned sequences.',
+};
+
 // ── SKILL MODAL DATA ──
 const skillData = {
   frontend: {
@@ -63,11 +110,38 @@ function openModal(skillKey) {
   document.getElementById('modalTitle').textContent  = d.title;
   document.getElementById('modalDesc').textContent   = d.desc;
   document.getElementById('modalDetail').textContent = d.detail;
-  document.getElementById('modalTags').innerHTML     = d.tags.map(t=>`<span>${t}</span>`).join('');
+  document.getElementById('modalTags').innerHTML     = d.tags.map(t=>{
+    const tip = tagInfo[t] || '';
+    return `<span class="modal-tag-item" data-tip="${tip}">${t}${tip ? '<span class="tag-minipop"></span>' : ''}</span>`;
+  }).join('');
   document.getElementById('modalList').innerHTML     = d.highlights.map(h=>`<li>${h}</li>`).join('');
   overlay.classList.add('open'); document.body.style.overflow = 'hidden';
 }
 function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+// ── TAG MINI-TOOLTIP ──
+let activeMiniPop = null;
+document.addEventListener('mouseover', e => {
+  const tag = e.target.closest('.modal-tag-item[data-tip]');
+  if (!tag || !tag.dataset.tip) return;
+  // Remove any existing
+  if (activeMiniPop) { activeMiniPop.remove(); activeMiniPop = null; }
+  const pop = document.createElement('div');
+  pop.className = 'tag-minipop-bubble';
+  pop.textContent = tag.dataset.tip;
+  document.body.appendChild(pop);
+  activeMiniPop = pop;
+  // Position above the tag
+  const rect = tag.getBoundingClientRect();
+  pop.style.left = rect.left + rect.width / 2 + 'px';
+  pop.style.top  = (rect.top + window.scrollY - 8) + 'px';
+  requestAnimationFrame(() => pop.classList.add('visible'));
+});
+document.addEventListener('mouseout', e => {
+  const tag = e.target.closest('.modal-tag-item[data-tip]');
+  if (!tag) return;
+  if (activeMiniPop) { activeMiniPop.remove(); activeMiniPop = null; }
+});
 
 document.querySelectorAll('.bento-card').forEach(card => {
   card.addEventListener('click', () => openModal(card.dataset.skill));
@@ -75,6 +149,33 @@ document.querySelectorAll('.bento-card').forEach(card => {
 closeBtn.addEventListener('click', closeModal);
 overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── LOAD MORE PROJECTS ──
+const loadMoreBtn = document.getElementById('loadMoreBtn');
+const extraProjects = document.getElementById('extraProjects');
+if (loadMoreBtn && extraProjects) {
+  loadMoreBtn.addEventListener('click', () => {
+    if (extraProjects.style.display === 'none') {
+      extraProjects.style.display = 'grid';
+      requestAnimationFrame(() => {
+        extraProjects.classList.add('visible');
+        // re-observe new cards for reveal
+        extraProjects.querySelectorAll('.proj-card').forEach((c, i) => {
+          c.style.opacity = '0';
+          c.style.transform = 'translateY(30px)';
+          c.style.transition = `opacity 0.5s ${i * 0.07}s ease, transform 0.5s ${i * 0.07}s ease`;
+          setTimeout(() => {
+            c.style.opacity = '1';
+            c.style.transform = 'translateY(0)';
+          }, 50);
+        });
+      });
+      loadMoreBtn.querySelector('span:last-child').textContent = 'Loaded ✓';
+      loadMoreBtn.querySelector('.load-more-icon').textContent = '✦';
+      loadMoreBtn.style.borderColor = 'rgba(227,28,28,0.5)';
+    }
+  });
+}
 
 
 // ── IN MY UNIVERSE ──
@@ -204,20 +305,28 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     const info = nodeInfo[key];
     if (!info) return;
 
-    // Position popup near node
+    // Position popup above the node
     const pos  = positions[key];
     const sw   = stage.offsetWidth;
     const sh   = stage.offsetHeight;
-    let left   = pos.px * sw + 62 + 8;
-    let top    = pos.py * sh - 10;
-    // Flip left if near right edge
-    if (left + 230 > sw) left = pos.px * sw - 230 - 8;
-    // Keep within top
-    if (top < 0) top = 0;
+    const nodeX = pos.px * sw;
+    const nodeY = pos.py * sh;
+    const popW  = 220;
+    const popH  = 220; // approximate height
+
+    // Center popup horizontally on the node, open above it
+    let left = nodeX + 31 - popW / 2;
+    let top  = nodeY - popH - 12; // 12px gap above node icon top
+
+    // Clamp horizontally
+    if (left < 4) left = 4;
+    if (left + popW > sw - 4) left = sw - popW - 4;
+    // If goes above stage, show below instead
+    if (top < 4) top = nodeY + 70;
 
     popup.style.left = left + 'px';
     popup.style.top  = top  + 'px';
-    popup.style.transformOrigin = left > pos.px * sw ? 'left top' : 'right top';
+    popup.style.transformOrigin = 'bottom center';
 
     // Fill content
     const iconEl = node.querySelector('.tool-icon').cloneNode(true);
@@ -235,8 +344,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       const b = document.createElement('div');
       b.className = 'node-popup-bar';
       if (i < info.level) {
-        // Top 2 levels = blue tint, rest red
-        b.classList.add(i >= 3 ? 'filled-blue' : 'filled');
+        b.classList.add('filled');
       }
       bars.appendChild(b);
     }
